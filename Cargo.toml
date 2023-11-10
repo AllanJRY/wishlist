@@ -1,0 +1,12 @@
+[package]
+name = "wishlist"
+authors = ["Allan JARRY <jarry.allan@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+description = "A website to share wishlists with friends."
+repository = "https://github.com/AllanJRY/wishlist"
+
+# todo : fill readme, license, homepage, and documentation keys once available.
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

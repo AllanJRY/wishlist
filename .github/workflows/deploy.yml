@@ -7,10 +7,6 @@ jobs:
     name: Deploy on VPS
     runs-on: ubuntu-latest
     steps:
-      - name: Generating the.env file
-        run: |
-          cd ${{ secrets.APPDIR }}
-          echo "${{ secrets.ENV_FILE }}" > .env
       - name: Updating and launching app through ssh
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -20,6 +16,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ${{ secrets.APPDIR }}
+            echo "${{ secrets.ENV_FILE }}" > .env
             git checkout main
             docker compose down
             docker compose up

@@ -18,5 +18,6 @@ jobs:
             cd ${{ secrets.APPDIR }}
             echo "${{ secrets.ENV_FILE }}" > .env
             git checkout main
+            git pull
             docker compose down
             docker compose up

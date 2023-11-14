@@ -1,1 +1,5 @@
+# Ignore the environnement variable, which may include sensitive datas.
+.env
+
+# Ignore build directory.
 /target

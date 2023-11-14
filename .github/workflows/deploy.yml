@@ -19,7 +19,7 @@ jobs:
             echo "${{ secrets.ENV_FILE }}" > .env
             git checkout main
             git pull
-            docker image rm wishlist-wishlist # tmp, later should use a published image on docker
             docker compose down
+            docker image rm wishlist-wishlist # tmp, later should use a published image on docker
             docker compose up -d
             exit

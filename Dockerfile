@@ -7,7 +7,7 @@ ARG APP_SRC=/var/www
 # will not be run again, Docker will use his cache.
 WORKDIR ${APP_SRC} 
 RUN cargo new wishlist
-WORKDIR ./wishlist
+WORKDIR ${APP_SRC}/wishlist
 COPY ./Cargo.toml ./Cargo.toml 
 RUN cargo build --release
 RUN rm src/*.rs

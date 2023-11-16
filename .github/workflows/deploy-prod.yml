@@ -1,6 +1,8 @@
-name: deploy
+name: deploy-prod
 
-on: workflow_dispatch
+on:
+  release:
+    types: [published]
 
 jobs:
   deploy:
@@ -15,11 +17,10 @@ jobs:
           key: ${{ secrets.SSHKEY }}
           port: ${{ secrets.PORT }}
           script: |
-            cd ${{ secrets.APPDIR }}
-            echo "${{ secrets.ENV_FILE }}" > .env
+            cd ${{ secrets.PROD_APP_DIR }}
+            echo "${{ secrets.PROD_ENV_FILE }}" > .env
             git checkout main
             git pull
             docker compose down
-            docker image rm wishlist-wishlist # tmp, later should use a published image on docker
             docker compose up -d
             exit

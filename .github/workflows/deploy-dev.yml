@@ -1,0 +1,24 @@
+name: deploy-dev
+
+on: workflow_dispatch
+
+jobs:
+  deploy:
+    name: Deploy on VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Updating and launching app through ssh
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd ${{ secrets.DEV_APP_DIR }}
+            echo "${{ secrets.DEV_ENV_FILE }}" > .env
+            git checkout dev
+            git pull
+            docker compose down
+            docker compose up -d
+            exit

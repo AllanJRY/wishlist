@@ -21,6 +21,6 @@ jobs:
             echo "${{ secrets.PROD_ENV_FILE }}" > .env
             git checkout main
             git pull
-            docker compose down
-            docker compose up -d
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d
             exit

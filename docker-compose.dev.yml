@@ -1,10 +1,12 @@
 version: "3"
 
 services:
-  wishlist:
+  wishlist-dev:
     container_name: wishlist-dev
     build:
       target: builder
     volumes:
       - .:/var/www/wishlist
+    ports:
+      - 7002:7000
     command: sh -c "cargo watch -x run"

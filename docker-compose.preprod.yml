@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  wishlist-preprod:
+    image: allanjry/wishlist:1.0
+    container_name: wishlist-preprod
+    ports:
+      - 7001:7000
+    restart: always

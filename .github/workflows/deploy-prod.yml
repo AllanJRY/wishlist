@@ -1,11 +1,8 @@
-name: Deploy on Prod
+name: Deploy on prod
 
-# To uncomment once docker image publishing is ready
-# on:
-#  release:
-#    types: [published]
-
-on: workflow_dispatch
+on:
+  release:
+    types: [published]
 
 jobs:
   deploy:

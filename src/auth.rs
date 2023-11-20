@@ -4,15 +4,16 @@ use axum::{
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
 };
-use jsonwebtoken::{decode, DecodingKey, EncodingKey, Validation};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 use tower_cookies::Cookies;
 
 /// The application store the Json Web Token inside a cookie due to the fact that
 /// the application use template on backend side with Askama.
 /// This constant is the name of the cookie set on the client which contain the access token.
-const ACCESS_TOKEN_COOKIE: &str = "access_token";
+pub const ACCESS_TOKEN_COOKIE: &str = "access_token";
 
 static JWT_ENCODE_KEY: Lazy<JWTEncodeKeys> = Lazy::new(|| {
     JWTEncodeKeys::new(
@@ -54,22 +55,22 @@ impl JWTEncodeKeys {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     // Subject (whom token refers to)
-    sub: String,
+    pub sub: String,
 
     /// Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
-    exp: usize,
+    pub exp: usize,
 
     /// Issued at (as UTC timestamp)
-    iat: usize,
+    pub iat: usize,
 
     /// Issuer
-    iss: String,
+    pub iss: String,
 
     /// Audience
-    aud: Option<String>,
+    pub aud: Option<String>,
 
     // Not Before (as UTC timestamp)
-    nbf: Option<usize>,
+    pub nbf: Option<usize>,
 }
 
 #[async_trait]
@@ -95,6 +96,24 @@ where
             return Err(Error::MissingToken);
         }
     }
+}
+
+// TODO: maybe an authenticator struct should be interesting
+pub fn make_user_claims(email: &str) -> Claims {
+    Claims {
+        sub: email.to_string(),
+        exp: OffsetDateTime::now_utc()
+            .checked_add(Duration::days(1))
+            .map(|date| date.unix_timestamp())
+            .unwrap() as usize,
+        iat: OffsetDateTime::now_utc().unix_timestamp() as usize,
+        iss: "wishlist.allan-jarry.com".to_string(),
+        aud: None,
+        nbf: None,
+    }
+}
+pub fn encode_access_token(claims: Claims) -> Result<String, Error> {
+    encode(&Header::default(), &claims, &JWT_ENCODE_KEY.encoding).map_err(|_| Error::TokenCreation)
 }
 
 #[derive(Debug, Clone)]

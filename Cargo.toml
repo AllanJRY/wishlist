@@ -11,7 +11,9 @@ repository = "https://github.com/AllanJRY/wishlist"
 
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.3.0"
 axum = "0.6.20"
+dotenv = "0.15.0"
 jsonwebtoken = "9.1.0"
 once_cell = "1.18.0"
 serde = { version = "1.0.192", features = ["derive"] }

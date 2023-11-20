@@ -31,6 +31,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "askama_axum"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07b336dea26a2eb67f04e1134385721f794b654a870ce5146d2fcb69ea39c3a4"
+dependencies = [
+ "askama",
+ "axum-core",
+ "http",
+]
+
+[[package]]
 name = "askama_derive"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,6 +220,12 @@ checksum = "0f32d04922c60427da6f9fef14d042d9edddef64cb9d4ce0d64d0685fbeb1fd3"
 dependencies = [
  "powerfmt",
 ]
+
+[[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "fnv"
@@ -1125,7 +1142,9 @@ name = "wishlist"
 version = "0.1.0"
 dependencies = [
  "askama",
+ "askama_axum",
  "axum",
+ "dotenv",
  "jsonwebtoken",
  "once_cell",
  "serde",

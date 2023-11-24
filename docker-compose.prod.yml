@@ -1,10 +1,30 @@
 version: "3"
 
 services:
-  wishlist:
-    image: allanjry/wishlist:1.0
-    container_name: wishlist
+  wishlist-db-prod:
+    container_name: wishlist-db-prod
+    image: surrealdb/surrealdb:1.0.0
+    env_file:
+      - .env
     ports:
-      - 7000:7000
+      - ${SURREAL_PORT}:8000
+    command: start file:${SURREAL_DB_FILE}
     restart: always
+    volumes:
+      - ${SURREAL_DB_FILE}:${SURREAL_DB_FILE}
+    networks:
+      - wishlist-prod
 
+  wishlist-app-prod:
+    container_name: wishlist-prod
+    depends_on:
+      - wishlist-db-prod
+    image: allanjry/wishlist:1.0
+    ports:
+      - ${SERVER_PORT}:7000
+    restart: always
+    networks:
+      - wishlist-prod
+
+networks:
+  wishlist-prod:

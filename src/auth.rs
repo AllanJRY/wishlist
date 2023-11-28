@@ -1,138 +1,94 @@
+use std::sync::Arc;
+
 use axum::{
     async_trait,
-    extract::FromRequestParts,
+    extract::{FromRef, FromRequestParts},
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
 };
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use time::{Duration, OffsetDateTime};
 use tower_cookies::Cookies;
 
-/// The application store the Json Web Token inside a cookie due to the fact that
-/// the application use template on backend side with Askama.
-/// This constant is the name of the cookie set on the client which contain the access token.
-pub const ACCESS_TOKEN_COOKIE: &str = "access_token";
+use crate::{db::Db, AppState};
 
-static JWT_ENCODE_KEY: Lazy<JWTEncodeKeys> = Lazy::new(|| {
-    JWTEncodeKeys::new(
-        std::env::var("JWT_SECRET")
-            .expect("JWT_SECRET must be set.")
-            .as_bytes(),
-    )
-});
-
-pub fn login(credentials: LoginCredentials) {
+pub fn login(credentials: SigninCredentials) {
     todo!()
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct LoginCredentials {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SignupCredentials {
     // TODO: make a tuple struct Email with custom Serialize and Deserialize behaviours.
     // also add validation to ensure a valid email.
     pub login: String,
     pub pwd: String,
 }
 
-struct JWTEncodeKeys {
-    encoding: EncodingKey,
-    decoding: DecodingKey,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SigninCredentials {
+    // TODO: make a tuple struct Email with custom Serialize and Deserialize behaviours.
+    // also add validation to ensure a valid email.
+    pub login: String,
+    pub pwd: String,
+    pub confirm_pwd: String,
+}
+/// The application store the Json Web Token inside a cookie due to the fact that
+/// the application use template on backend side with Askama.
+/// This constant is the name of the cookie set on the client which contain the access token.
+pub const ACCESS_TOKEN_COOKIE: &str = "access_token";
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuthenticatedUser {
+    login: String,
 }
 
-impl JWTEncodeKeys {
-    fn new(secret: &[u8]) -> Self {
-        Self {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
-        }
-    }
-}
-
-/// Define the claims present in the Json Web Token payload according to the
-/// specifications.
-/// This application use JWT in the authentication process.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    // Subject (whom token refers to)
-    pub sub: String,
-
-    /// Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
-    pub exp: usize,
-
-    /// Issued at (as UTC timestamp)
-    pub iat: usize,
-
-    /// Issuer
-    pub iss: String,
-
-    /// Audience
-    pub aud: Option<String>,
-
-    // Not Before (as UTC timestamp)
-    pub nbf: Option<usize>,
-}
-
+// TODO: Arc<AppState>
 #[async_trait]
-impl<S> FromRequestParts<S> for Claims
-where
-    S: Send + Sync,
-{
-    type Rejection = Error;
+impl FromRequestParts<AppState> for AuthenticatedUser {
+    type Rejection = AuthError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let cookies = Cookies::from_request_parts(parts, state).await.unwrap();
         if let Some(access_token_cookie) = cookies.get(ACCESS_TOKEN_COOKIE) {
-            let claims = decode::<Claims>(
-                access_token_cookie.value(),
-                &JWT_ENCODE_KEY.decoding,
-                &Validation::default(),
-            )
-            .map_err(|_| Error::InvalidToken)?
-            .claims;
+            let db = state.db.connect_scope(access_token_cookie.value()).await;
+            let user: Option<AuthenticatedUser> = db
+                .query("SELECT user:$auth.id FROM user")
+                .await
+                .unwrap()
+                .take(0)
+                .unwrap();
 
-            return Ok(claims);
+            match user {
+                Some(authenticated_user) => Ok(authenticated_user),
+                None => Err(AuthError::InvalidToken), // todo no user
+            }
         } else {
-            return Err(Error::MissingToken);
+            return Err(AuthError::MissingToken);
         }
     }
-}
-
-// TODO: maybe an authenticator struct should be interesting
-pub fn make_user_claims(email: &str) -> Claims {
-    Claims {
-        sub: email.to_string(),
-        exp: OffsetDateTime::now_utc()
-            .checked_add(Duration::days(1))
-            .map(|date| date.unix_timestamp())
-            .unwrap() as usize,
-        iat: OffsetDateTime::now_utc().unix_timestamp() as usize,
-        iss: "wishlist.allan-jarry.com".to_string(),
-        aud: None,
-        nbf: None,
-    }
-}
-pub fn encode_access_token(claims: Claims) -> Result<String, Error> {
-    encode(&Header::default(), &claims, &JWT_ENCODE_KEY.encoding).map_err(|_| Error::TokenCreation)
 }
 
 #[derive(Debug, Clone)]
-pub enum Error {
-    WrongCredentials,
+pub enum AuthError {
+    InvalidCredentials,
     MissingCredentials,
     TokenCreation,
     InvalidToken,
     MissingToken,
+    SignupFailed,
 }
 
-impl IntoResponse for Error {
+impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            Error::WrongCredentials => (StatusCode::UNAUTHORIZED, "Wrong credentials"),
-            Error::MissingCredentials => (StatusCode::BAD_REQUEST, "Missing credentials"),
-            Error::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
-            Error::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid access token"),
-            Error::MissingToken => (StatusCode::UNAUTHORIZED, "Missing access token"),
+            AuthError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Wrong credentials"),
+            AuthError::MissingCredentials => (StatusCode::BAD_REQUEST, "Missing credentials"),
+            AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
+            AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid access token"),
+            AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing access token"),
+            AuthError::SignupFailed => (StatusCode::INTERNAL_SERVER_ERROR, "Signup failed"),
         };
 
         // TODO: template as body
@@ -144,10 +100,10 @@ impl IntoResponse for Error {
     }
 }
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for AuthError {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for AuthError {}

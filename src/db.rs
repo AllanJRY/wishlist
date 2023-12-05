@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use axum::extract::FromRef;
 use serde::Deserialize;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
@@ -5,10 +8,14 @@ use surrealdb::{
     Surreal,
 };
 
-use crate::auth::{AuthError, SigninCredentials, SignupCredentials};
+use crate::{
+    auth::{AuthError, SigninCredentials, SignupCredentials},
+    AppState,
+};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SurrealConfig {
+    pub addr: String,
     pub db_ns: String,
     pub db_name: String,
 }
@@ -24,20 +31,27 @@ pub struct Db {
     name: String,
 }
 
+impl FromRef<Arc<AppState>> for Db {
+    fn from_ref(app_state: &Arc<AppState>) -> Self {
+        app_state.db.clone()
+    }
+}
+
 impl Db {
     pub fn new(endpoint: String, ns: String, name: String) -> Self {
         Db { endpoint, ns, name }
     }
 
     pub async fn connect(&self) -> Surreal<Client> {
-        let db = Surreal::new::<Ws>("wishlist-db-prod:8000").await.unwrap();
+        println!("{}", self.endpoint);
+        let db = Surreal::new::<Ws>(self.endpoint.clone()).await.unwrap();
         db.use_ns("prod").use_db("wishlist").await.unwrap();
         db
     }
 
     // TODO: a wrapper around the connectionsm this way a can have a GlobalConn and ScopedConn
     pub async fn connect_scope(&self, token: &str) -> Surreal<Client> {
-        let db = Surreal::new::<Ws>("wishlist-db-prod:8000").await.unwrap();
+        let db = Surreal::new::<Ws>(self.endpoint.clone()).await.unwrap();
         db.use_ns("prod").use_db("wishlist").await.unwrap();
         db.authenticate(token).await.unwrap();
         db

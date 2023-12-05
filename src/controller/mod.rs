@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     debug_handler,
     extract::State,
@@ -8,18 +10,19 @@ use tower_cookies::{Cookie, Cookies};
 
 use crate::{
     auth::{AuthenticatedUser, SigninCredentials, SignupCredentials, ACCESS_TOKEN_COOKIE},
-    template::LoginTempl,
+    db::Db,
+    template::{SigninTempl, SignupTempl},
 };
 
 pub struct SecurityController;
 
 impl SecurityController {
-    pub async fn signup(auth_user: Option<AuthenticatedUser>) -> Result<LoginTempl, Redirect> {
+    pub async fn signup(auth_user: Option<AuthenticatedUser>) -> Result<SignupTempl, Redirect> {
         if auth_user.is_some() {
             return Err(Redirect::to("/"));
         }
 
-        Ok(LoginTempl)
+        Ok(SignupTempl)
     }
 
     pub async fn handle_signup(
@@ -31,23 +34,23 @@ impl SecurityController {
             return Ok(Redirect::to("/"));
         }
 
-        let _ = db.signup(signup_credentials).await?;
+        db.signup(signup_credentials).await?;
 
         Ok(Redirect::to("/login"))
     }
 
-    pub async fn login(claims: Option<AuthenticatedUser>) -> Result<LoginTempl, Redirect> {
+    pub async fn signin(claims: Option<AuthenticatedUser>) -> Result<SigninTempl, Redirect> {
         if claims.is_some() {
             return Err(Redirect::to("/"));
         }
 
-        Ok(LoginTempl)
+        Ok(SigninTempl)
     }
 
-    pub async fn handle_login(
+    pub async fn handle_signin(
         auth_user: Option<AuthenticatedUser>,
         cookies: Cookies,
-        State(db): State<crate::db::Db>,
+        State(db): State<Db>,
         Form(signin_credentials): Form<SigninCredentials>,
     ) -> impl IntoResponse {
         if auth_user.is_some() {

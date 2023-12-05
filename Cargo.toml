@@ -11,8 +11,8 @@ repository = "https://github.com/AllanJRY/wishlist"
 
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum"] }
-askama_axum = "0.3.0"
-axum = { version = "0.6.20", features = ["macros"] }
+askama_axum = "0.4.0"
+axum = { version = "0.7.1", features = ["macros"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
 jsonwebtoken = "9.1.0"
@@ -22,5 +22,5 @@ surrealdb = "1.0.0"
 time = "0.3.30"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 tower = "0.4.13"
-tower-cookies = "0.9.0"
-tower-http = { version = "0.4.4", features = ["fs"] }
+tower-cookies = "0.10.0"
+tower-http = { version = "0.5.0", features = ["fs"] }

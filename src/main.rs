@@ -1,6 +1,6 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::sync::Arc;
 
-use axum::{extract::FromRef, routing::get, Router, Server};
+use axum::{extract::FromRef, routing::get, Router};
 use controller::SecurityController;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
@@ -18,30 +18,26 @@ async fn main() {
         .from_env::<db::SurrealConfig>()
         .unwrap();
 
-    let db = db::Db::new(
-        "wishlist-db-prod:8000".to_string(),
-        db_config.db_ns,
-        db_config.db_name,
-    );
+    let db = db::Db::new(db_config.addr, db_config.db_ns, db_config.db_name);
 
     let app = Router::new()
         .route("/", get(|| async { "Hello world!" }))
         .route(
-            "/login",
-            get(SecurityController::login).post(SecurityController::handle_login),
+            "/signin",
+            get(SecurityController::signin).post(SecurityController::handle_signin),
         )
-        .with_state(AppState { db }) // TODO: make with arc
+        .route(
+            "/signup",
+            get(SecurityController::signup).post(SecurityController::handle_signup),
+        )
+        .with_state(Arc::new(AppState { db }))
         .layer(CookieManagerLayer::new())
         .nest_service("/assets", ServeDir::new("assets"));
 
     // todo: make the port configurable via env, which give the ability to use it
     // in the docker config aswell.
-    let addr = SocketAddr::from(([0, 0, 0, 0], 7000));
-
-    Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let tcp_listener = tokio::net::TcpListener::bind("0.0.0.0:7000").await.unwrap();
+    axum::serve(tcp_listener, app).await.unwrap();
 }
 
 #[derive(Debug, Clone, FromRef)]

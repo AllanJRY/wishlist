@@ -43,16 +43,41 @@ pub struct AuthenticatedUser {
 
 // TODO: Arc<AppState>
 #[async_trait]
-impl FromRequestParts<AppState> for AuthenticatedUser {
+impl FromRequestParts<Arc<AppState>> for AuthenticatedUser {
     type Rejection = AuthError;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &AppState,
+        state: &Arc<AppState>,
     ) -> Result<Self, Self::Rejection> {
         let cookies = Cookies::from_request_parts(parts, state).await.unwrap();
         if let Some(access_token_cookie) = cookies.get(ACCESS_TOKEN_COOKIE) {
             let db = state.db.connect_scope(access_token_cookie.value()).await;
+            let user: Option<AuthenticatedUser> = db
+                .query("SELECT user:$auth.id FROM user")
+                .await
+                .unwrap()
+                .take(0)
+                .unwrap();
+
+            match user {
+                Some(authenticated_user) => Ok(authenticated_user),
+                None => Err(AuthError::InvalidToken), // todo no user
+            }
+        } else {
+            return Err(AuthError::MissingToken);
+        }
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<Db> for AuthenticatedUser {
+    type Rejection = AuthError;
+
+    async fn from_request_parts(parts: &mut Parts, db: &Db) -> Result<Self, Self::Rejection> {
+        let cookies = Cookies::from_request_parts(parts, db).await.unwrap();
+        if let Some(access_token_cookie) = cookies.get(ACCESS_TOKEN_COOKIE) {
+            let db = db.connect_scope(access_token_cookie.value()).await;
             let user: Option<AuthenticatedUser> = db
                 .query("SELECT user:$auth.id FROM user")
                 .await

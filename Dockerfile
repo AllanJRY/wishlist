@@ -12,9 +12,6 @@ COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release
 RUN rm src/*.rs
 
-# Used in development environnement.
-RUN cargo install cargo-watch
-
 # This time we copy project code.
 ADD . .
 
@@ -23,6 +20,9 @@ RUN rm ./target/release/deps/wishlist*
 
 # We build the final binary.
 RUN cargo build --release
+
+# Used in development environnement.
+RUN cargo install cargo-watch
 
 # We start a new layer from a fresh ubuntu installatio, this way, the builder
 # stage before, which can take a lot a space will be totally removed from
@@ -33,19 +33,19 @@ ARG APP=/var/www/wishlist
 # Update ubuntu package and install useful ones
 # todo: explain pulled packages and the rm cmd
 RUN apt-get update \
-    && apt-get install -y ca-certificates tzdata \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y ca-certificates tzdata \
+  && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 7000
 
 ENV TZ=Etc/UTC \ 
-    APP_USER=appuser
+  APP_USER=appuser
 
 # We create a new user which will have only permissions on the app directory.
 # and we also create to application folder.
 RUN groupadd $APP_USER \
-    && useradd -g $APP_USER $APP_USER \
-    && mkdir -p ${APP}
+  && useradd -g $APP_USER $APP_USER \
+  && mkdir -p ${APP}
 
 
 # Here is the trick, we pull only the builded binary from the builder stage.

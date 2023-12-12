@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     async_trait,
-    extract::{FromRef, FromRequestParts},
+    extract::FromRequestParts,
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -10,10 +10,6 @@ use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
 
 use crate::{db::Db, AppState};
-
-pub fn login(credentials: SigninCredentials) {
-    todo!()
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignupCredentials {
@@ -55,11 +51,13 @@ impl FromRequestParts<Arc<AppState>> for AuthenticatedUser {
         if let Some(access_token_cookie) = cookies.get(ACCESS_TOKEN_COOKIE) {
             let db = state.db.connect_scope(access_token_cookie.value()).await;
             let user: Option<AuthenticatedUser> = db
-                .query("SELECT user:$auth.id FROM user")
+                .query("SELECT * FROM $auth;")
                 .await
                 .unwrap()
                 .take(0)
                 .unwrap();
+
+            dbg!(&user);
 
             match user {
                 Some(authenticated_user) => Ok(authenticated_user),

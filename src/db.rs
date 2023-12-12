@@ -4,7 +4,7 @@ use axum::extract::FromRef;
 use serde::Deserialize;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
-    opt::auth::{Jwt, Root, Scope},
+    opt::auth::{Jwt, Scope},
     Surreal,
 };
 

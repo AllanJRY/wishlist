@@ -33,7 +33,7 @@ impl SecurityController {
 
         db.signup(signup_credentials).await?;
 
-        Ok(Redirect::to("/login"))
+        Ok(Redirect::to("/signin"))
     }
 
     pub async fn signin(claims: Option<AuthenticatedUser>) -> Result<SigninTempl, Redirect> {
@@ -62,7 +62,7 @@ impl SecurityController {
                 ));
                 Redirect::to("/")
             }
-            Err(_) => Redirect::to("/login"),
+            Err(_) => Redirect::to("/signin"),
         }
     }
 }

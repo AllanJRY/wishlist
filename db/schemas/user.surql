@@ -22,5 +22,5 @@ DEFINE SCOPE user_scope SESSION 30d
     SIGNIN (
         SELECT *
         FROM user
-        WHERE username = $username AND crypto::argon2::compare(pwd, $pwd)
+        WHERE email = $email AND crypto::argon2::compare(pwd, $pwd)
     );

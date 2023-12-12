@@ -4,7 +4,7 @@ use axum::extract::FromRef;
 use serde::Deserialize;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
-    opt::auth::{Jwt, Scope},
+    opt::auth::{Jwt, Root, Scope},
     Surreal,
 };
 
@@ -26,6 +26,7 @@ impl SurrealConfig {
 
 #[derive(Debug, Clone)]
 pub struct Db {
+    // todo: use str
     endpoint: String,
     ns: String,
     name: String,
@@ -43,22 +44,34 @@ impl Db {
     }
 
     pub async fn connect(&self) -> Surreal<Client> {
-        println!("{}", self.endpoint);
         let db = Surreal::new::<Ws>(self.endpoint.clone()).await.unwrap();
-        db.use_ns("prod").use_db("wishlist").await.unwrap();
+        //db.signin(Root {
+        //    username: "root",
+        //    password: "root",
+        //})
+        //.await
+        //.unwrap();
+        db.use_ns(self.ns.clone())
+            .use_db(self.name.clone())
+            .await
+            .unwrap();
         db
     }
 
     // TODO: a wrapper around the connectionsm this way a can have a GlobalConn and ScopedConn
     pub async fn connect_scope(&self, token: &str) -> Surreal<Client> {
         let db = Surreal::new::<Ws>(self.endpoint.clone()).await.unwrap();
-        db.use_ns("prod").use_db("wishlist").await.unwrap();
+        db.use_ns(self.ns.clone())
+            .use_db(self.name.clone())
+            .await
+            .unwrap();
         db.authenticate(token).await.unwrap();
         db
     }
 
     pub async fn signup(&self, signup_credentials: SignupCredentials) -> Result<(), AuthError> {
         let db = self.connect().await;
+        // todo check confirm pwd
         match db
             .signup(Scope {
                 namespace: self.ns.as_str(),
@@ -69,7 +82,10 @@ impl Db {
             .await
         {
             Ok(_) => Ok(()),
-            Err(_) => Err(AuthError::SignupFailed),
+            Err(sur_err) => {
+                dbg!(sur_err);
+                Err(AuthError::SignupFailed)
+            }
         }
     }
 

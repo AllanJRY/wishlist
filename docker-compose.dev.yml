@@ -12,11 +12,9 @@ services:
     restart: always
     volumes:
       - ${SURREAL_DB_FILE}:${SURREAL_DB_FILE}
-    networks:
-      - wishlist-dev
 
   wishlist-app-dev:
-    container_name: wishlist-dev
+    container_name: wishlist-app-dev
     depends_on:
       - wishlist-db-dev
     build:
@@ -27,9 +25,5 @@ services:
       - .:/var/www/wishlist
     ports:
       - ${SERVER_PORT}:7000
+    restart: always
     command: sh -c "cargo watch -x run"
-    networks:
-      - wishlist-dev
-
-networks:
-  wishlist-dev:

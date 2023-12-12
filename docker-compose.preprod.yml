@@ -12,19 +12,14 @@ services:
     restart: always
     volumes:
       - ${SURREAL_DB_FILE}:${SURREAL_DB_FILE}
-    networks:
-      - wishlist-preprod
 
   wishlist-app-preprod:
     container_name: wishlist-preprod
     depends_on:
       - wishlist-db-preprod
     image: allanjry/wishlist:1.0
+    env_file:
+      - .env
     ports:
       - ${SERVER_PORT}:7000
     restart: always
-    networks:
-      - wishlist-preprod
-
-networks:
-  wishlist-preprod:

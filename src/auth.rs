@@ -19,17 +19,18 @@ pub fn login(credentials: SigninCredentials) {
 pub struct SignupCredentials {
     // TODO: make a tuple struct Email with custom Serialize and Deserialize behaviours.
     // also add validation to ensure a valid email.
-    pub login: String,
+    pub username: String,
+    pub email: String,
     pub pwd: String,
+    pub confirm_pwd: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SigninCredentials {
     // TODO: make a tuple struct Email with custom Serialize and Deserialize behaviours.
     // also add validation to ensure a valid email.
-    pub login: String,
+    pub email: String,
     pub pwd: String,
-    pub confirm_pwd: String,
 }
 /// The application store the Json Web Token inside a cookie due to the fact that
 /// the application use template on backend side with Askama.
@@ -38,7 +39,7 @@ pub const ACCESS_TOKEN_COOKIE: &str = "access_token";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AuthenticatedUser {
-    login: String,
+    email: String,
 }
 
 // TODO: Arc<AppState>

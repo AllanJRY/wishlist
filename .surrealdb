@@ -1,0 +1,9 @@
+[core]
+    path = "./db"
+
+[db]
+    address = "ws://127.0.0.1:7001"
+    username = "root"
+    password = "root"
+    ns = "dev"
+    db = "wishlist"
